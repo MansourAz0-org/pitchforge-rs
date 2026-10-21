@@ -22,9 +22,20 @@ fft = ["dep:realfft"]
 realfft = { version = "3.5", optional = true }
 
 [dev-dependencies]
+criterion = "0.8"
+hound = "3.5"
 
 [[test]]
 name = "yin_accuracy"
+required-features = ["signals"]
+
+[[bench]]
+name = "detectors"
+harness = false
+required-features = ["signals", "fft"]
+
+[[example]]
+name = "basic"
 required-features = ["signals"]
 
 [package.metadata.docs.rs]
