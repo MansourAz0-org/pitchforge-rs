@@ -191,21 +191,27 @@ impl Yin {
         }
     }
 
-    /// First local minimum of `d′` below `threshold` in `[τ_min, τ_max]`.
+    /// Bottom of the first dip of `d′` that falls below `threshold` in
+    /// `[τ_min, τ_max]`.
+    ///
+    /// The paper walks down from the first sub-threshold lag to the nearest
+    /// local minimum. With broadband noise the dip around a low-frequency
+    /// period is wide and rippled, so that walk can stop on a ripple on the
+    /// falling slope and bias the estimate sharp by tens of cents. Instead we
+    /// take the minimum over the whole contiguous run of lags below the
+    /// threshold, which is the same dip but immune to ripples.
     fn first_dip_below(&self, threshold: f64) -> Option<usize> {
         let d = &self.cmndf;
-        let mut tau = self.tau_min;
-        while tau <= self.tau_max {
-            if d[tau] < threshold {
-                // Walk down to the bottom of this dip.
-                while tau < self.tau_max && d[tau + 1] < d[tau] {
-                    tau += 1;
-                }
-                return Some(tau);
+        let start = (self.tau_min..=self.tau_max).find(|&tau| d[tau] < threshold)?;
+        let mut best = start;
+        let mut tau = start + 1;
+        while tau <= self.tau_max && d[tau] < threshold {
+            if d[tau] < d[best] {
+                best = tau;
             }
             tau += 1;
         }
-        None
+        Some(best)
     }
 
     fn global_min(&self) -> usize {
