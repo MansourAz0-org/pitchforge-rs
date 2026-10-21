@@ -15,8 +15,8 @@ pub enum ConfigError {
         /// Requested upper bound in Hz.
         max: f64,
     },
-    /// A threshold parameter is outside its valid range.
-    InvalidThreshold {
+    /// A numeric parameter is outside its valid range.
+    InvalidParameter {
         /// Parameter name.
         name: &'static str,
         /// Rejected value.
@@ -39,7 +39,7 @@ impl fmt::Display for ConfigError {
             Self::InvalidFrequencyRange { min, max } => {
                 write!(f, "invalid frequency range: {min} Hz .. {max} Hz")
             }
-            Self::InvalidThreshold { name, value } => {
+            Self::InvalidParameter { name, value } => {
                 write!(f, "invalid value for {name}: {value}")
             }
             Self::WindowTooShort { required, actual } => write!(

@@ -16,6 +16,7 @@ mod detector;
 mod difference;
 mod error;
 mod estimate;
+mod framer;
 mod preprocess;
 mod yin;
 
@@ -23,4 +24,5 @@ pub use detector::PitchDetector;
 pub use difference::DifferenceMethod;
 pub use error::{ConfigError, DetectError};
 pub use estimate::{Diagnostics, PitchEstimate, UnvoicedReason, Voicing};
+pub use framer::Framer;
 pub use yin::{Yin, YinConfig};

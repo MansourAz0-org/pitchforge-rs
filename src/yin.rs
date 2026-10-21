@@ -319,19 +319,19 @@ fn validate(sample_rate: f64, c: &YinConfig) -> Result<(usize, usize), ConfigErr
         });
     }
     if !(c.threshold > 0.0 && c.threshold < 1.0) {
-        return Err(ConfigError::InvalidThreshold {
+        return Err(ConfigError::InvalidParameter {
             name: "threshold",
             value: c.threshold,
         });
     }
     if !(c.voicing_threshold >= c.threshold && c.voicing_threshold < 1.0) {
-        return Err(ConfigError::InvalidThreshold {
+        return Err(ConfigError::InvalidParameter {
             name: "voicing_threshold",
             value: c.voicing_threshold,
         });
     }
     if c.silence_threshold_db.is_nan() {
-        return Err(ConfigError::InvalidThreshold {
+        return Err(ConfigError::InvalidParameter {
             name: "silence_threshold_db",
             value: c.silence_threshold_db,
         });
@@ -437,7 +437,7 @@ mod tests {
                     ..c
                 }
             ),
-            Err(ConfigError::InvalidThreshold {
+            Err(ConfigError::InvalidParameter {
                 name: "voicing_threshold",
                 ..
             })
