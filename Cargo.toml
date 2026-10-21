@@ -11,9 +11,18 @@ keywords = ["pitch", "dsp", "audio", "yin", "f0"]
 categories = ["multimedia::audio", "science"]
 exclude = ["/.github"]
 
+[features]
+default = []
+## Deterministic synthetic test-signal generators (sine, harmonic, pluck, vibrato, glide, noise).
+signals = []
+
 [dependencies]
 
 [dev-dependencies]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [lints.rust]
 missing_docs = "warn"

@@ -7,3 +7,7 @@
 //! and a sample rate, and reports the most likely fundamental frequency
 //! together with a confidence measure and diagnostics.
 #![cfg_attr(docsrs, feature(doc_cfg))]
+
+#[cfg(feature = "signals")]
+#[cfg_attr(docsrs, doc(cfg(feature = "signals")))]
+pub mod signals;
