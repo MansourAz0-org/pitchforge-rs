@@ -15,7 +15,10 @@ pub mod signals;
 mod detector;
 mod error;
 mod estimate;
+mod preprocess;
+mod yin;
 
 pub use detector::PitchDetector;
 pub use error::{ConfigError, DetectError};
 pub use estimate::{Diagnostics, PitchEstimate, UnvoicedReason, Voicing};
+pub use yin::{Yin, YinConfig};
