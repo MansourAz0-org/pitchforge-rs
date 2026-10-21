@@ -17,6 +17,7 @@ mod difference;
 mod error;
 mod estimate;
 mod framer;
+mod onset;
 mod preprocess;
 mod yin;
 
@@ -25,4 +26,5 @@ pub use difference::DifferenceMethod;
 pub use error::{ConfigError, DetectError};
 pub use estimate::{Diagnostics, PitchEstimate, UnvoicedReason, Voicing};
 pub use framer::Framer;
+pub use onset::{Onset, OnsetConfig, OnsetDetector};
 pub use yin::{Yin, YinConfig};

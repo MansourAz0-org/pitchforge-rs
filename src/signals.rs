@@ -68,6 +68,10 @@ pub struct PluckParams {
     pub tilt: f64,
     /// Attack time in seconds (linear ramp) to avoid a click at onset.
     pub attack: f64,
+    /// Peak level of a short (≈3 ms) decaying white-noise burst added at the
+    /// start, relative to the fundamental's initial amplitude — a crude model
+    /// of the broadband transient from a plectrum. `0.0` disables it.
+    pub pick_noise: f64,
 }
 
 impl Default for PluckParams {
@@ -78,6 +82,7 @@ impl Default for PluckParams {
             inharmonicity: 3e-5,
             tilt: 1.0,
             attack: 0.002,
+            pick_noise: 0.0,
         }
     }
 }
@@ -98,6 +103,8 @@ pub fn pluck(
     // ln(1000) ≈ 6.9078: amplitude falls by 60 dB over t60.
     let base_decay = 6.907_755 / params.t60;
     let attack_samples = (params.attack * sample_rate).max(1.0);
+    let noise_decay = 1.0 / (0.001 * sample_rate);
+    let mut rng = SplitMix64::new(frequency.to_bits());
     let mut out: Vec<f32> = (0..len)
         .map(|n| {
             let t = n as f64 / sample_rate;
@@ -115,7 +122,12 @@ pub fn pluck(
                     a * (-decay * t).exp() * (TAU * fk * t + 0.29 * k).sin()
                 })
                 .sum();
-            env_attack * s
+            let burst = if params.pick_noise > 0.0 {
+                params.pick_noise * (-(n as f64) * noise_decay).exp() * rng.next_bipolar() as f64
+            } else {
+                0.0
+            };
+            env_attack * s + burst
         })
         .map(|x| x as f32)
         .collect();
