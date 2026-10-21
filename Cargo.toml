@@ -12,11 +12,14 @@ categories = ["multimedia::audio", "science"]
 exclude = ["/.github"]
 
 [features]
-default = []
+default = ["fft"]
 ## Deterministic synthetic test-signal generators (sine, harmonic, pluck, vibrato, glide, noise).
 signals = []
+## O(N log N) YIN difference function using `realfft` (enabled by default).
+fft = ["dep:realfft"]
 
 [dependencies]
+realfft = { version = "3.5", optional = true }
 
 [dev-dependencies]
 

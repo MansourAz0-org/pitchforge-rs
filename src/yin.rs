@@ -31,6 +31,7 @@
 //! * explicit out-of-range detection when the best dip sits on the boundary
 //!   of the lag search range.
 
+use crate::difference::{self, DifferenceMethod};
 use crate::preprocess::{parabolic_offset, prepare, rms_to_dbfs};
 use crate::{
     ConfigError, DetectError, Diagnostics, PitchDetector, PitchEstimate, UnvoicedReason, Voicing,
@@ -55,6 +56,9 @@ pub struct YinConfig {
     pub silence_threshold_db: f64,
     /// Subtract the window mean before analysis.
     pub remove_dc: bool,
+    /// How to compute the difference function (speed only; results agree
+    /// to rounding error).
+    pub difference: DifferenceMethod,
 }
 
 impl Default for YinConfig {
@@ -67,6 +71,7 @@ impl Default for YinConfig {
             voicing_threshold: 0.25,
             silence_threshold_db: -60.0,
             remove_dc: true,
+            difference: DifferenceMethod::default(),
         }
     }
 }
@@ -102,6 +107,8 @@ pub struct Yin {
     diff: Vec<f64>,
     /// `d′(τ)` for `τ = 0..=tau_max`.
     cmndf: Vec<f64>,
+    #[cfg(feature = "fft")]
+    fft: Option<difference::FftDifference>,
 }
 
 impl Yin {
@@ -133,6 +140,9 @@ impl Yin {
             samples: vec![0.0; window_size],
             diff: vec![0.0; tau_max + 1],
             cmndf: vec![1.0; tau_max + 1],
+            #[cfg(feature = "fft")]
+            fft: (config.difference == DifferenceMethod::Fft)
+                .then(|| difference::FftDifference::new(window_size)),
         })
     }
 
@@ -165,17 +175,12 @@ impl Yin {
     }
 
     fn difference(&mut self) {
-        let x = &self.samples;
-        let w = self.integration;
-        self.diff[0] = 0.0;
-        for tau in 1..=self.tau_max {
-            let mut acc = 0.0;
-            for j in 0..w {
-                let delta = x[j] - x[j + tau];
-                acc += delta * delta;
-            }
-            self.diff[tau] = acc;
+        #[cfg(feature = "fft")]
+        if let Some(fft) = &mut self.fft {
+            fft.compute(&self.samples, self.integration, &mut self.diff);
+            return;
         }
+        difference::direct(&self.samples, self.integration, &mut self.diff);
     }
 
     fn cumulative_mean_normalize(&mut self) {
@@ -470,6 +475,43 @@ mod tests {
         let mut yin = Yin::new(SR, 4096, c).unwrap();
         let est = yin.detect(&sine(60.0, 4096)).unwrap();
         assert_ne!(est.voicing, Voicing::Voiced, "{est:?}");
+    }
+
+    #[cfg(feature = "fft")]
+    #[test]
+    fn fft_and_direct_difference_agree() {
+        let direct_cfg = YinConfig {
+            difference: DifferenceMethod::Direct,
+            ..YinConfig::default()
+        };
+        let fft_cfg = YinConfig {
+            difference: DifferenceMethod::Fft,
+            ..YinConfig::default()
+        };
+        for window in [2048, 3000, 4096] {
+            let mut direct = Yin::new(SR, window, direct_cfg).unwrap();
+            let mut fft = Yin::new(SR, window, fft_cfg).unwrap();
+            for (i, f) in [61.0, 133.3, 440.0, 1111.0].into_iter().enumerate() {
+                // Sine plus a deterministic pseudo-random component.
+                let w: Vec<f32> = sine(f, window)
+                    .iter()
+                    .enumerate()
+                    .map(|(n, &x)| {
+                        x + 0.05 * (((n * 7919 + i * 104_729) % 1000) as f32 / 500.0 - 1.0)
+                    })
+                    .collect();
+                let a = direct.detect(&w).unwrap();
+                let b = fft.detect(&w).unwrap();
+                let scale = direct.diff.iter().fold(0.0f64, |m, &v| m.max(v));
+                for (x, y) in direct.diff.iter().zip(&fft.diff) {
+                    assert!((x - y).abs() <= 1e-9 * scale, "{x} vs {y}");
+                }
+                assert_eq!(a.voicing, b.voicing);
+                assert_eq!(a.diagnostics.lag, b.diagnostics.lag);
+                let (fa, fb) = (a.candidate.unwrap(), b.candidate.unwrap());
+                assert!(cents(fa, fb).abs() < 1e-3, "{fa} vs {fb}");
+            }
+        }
     }
 
     #[test]
