@@ -20,6 +20,10 @@ signals = []
 
 [dev-dependencies]
 
+[[test]]
+name = "yin_accuracy"
+required-features = ["signals"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
