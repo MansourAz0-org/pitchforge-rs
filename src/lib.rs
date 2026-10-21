@@ -11,3 +11,11 @@
 #[cfg(feature = "signals")]
 #[cfg_attr(docsrs, doc(cfg(feature = "signals")))]
 pub mod signals;
+
+mod detector;
+mod error;
+mod estimate;
+
+pub use detector::PitchDetector;
+pub use error::{ConfigError, DetectError};
+pub use estimate::{Diagnostics, PitchEstimate, UnvoicedReason, Voicing};
