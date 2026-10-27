@@ -339,7 +339,16 @@ fn validate(sample_rate: f64, c: &YinConfig) -> Result<(usize, usize), ConfigErr
     // τ_min ≥ 2 so the parabolic fit always has a left neighbour with τ ≥ 1.
     let tau_min = ((sample_rate / c.max_frequency).floor() as usize).max(2);
     // +1 so a candidate exactly at min_frequency still has a right neighbour.
-    let tau_max = (sample_rate / c.min_frequency).ceil() as usize + 1;
+    let max_period = (sample_rate / c.min_frequency).ceil();
+    // Leave room for the interpolation neighbour and twice the lag in the
+    // required window size. Float-to-integer casts saturate, so check first.
+    if !max_period.is_finite() || max_period >= (usize::MAX / 2) as f64 {
+        return Err(ConfigError::InvalidParameter {
+            name: "min_frequency",
+            value: c.min_frequency,
+        });
+    }
+    let tau_max = max_period as usize + 1;
     Ok((tau_min, tau_max))
 }
 
@@ -452,6 +461,16 @@ mod tests {
             }
         );
         assert!(Yin::new(SR, 1922, c).is_ok());
+    }
+
+    #[test]
+    fn rejects_unrepresentable_lag_without_panicking() {
+        let config = YinConfig {
+            min_frequency: f64::MIN_POSITIVE,
+            ..YinConfig::default()
+        };
+        assert!(Yin::required_window_size(SR, &config).is_err());
+        assert!(Yin::new(SR, 4096, config).is_err());
     }
 
     #[test]

@@ -7,6 +7,14 @@ break the API).
 
 ## [Unreleased]
 
+### Fixed
+- Reject unrepresentable YIN lag/window calculations for extremely small minimum frequencies.
+- Describe only the implemented YIN detector in package metadata.
+
+### Added
+- Clearer README, algorithm/related-work credits, contribution and security guidance,
+  release audit, source export, secret/dependency checks and dependency updates.
+
 ## [0.1.0] - 2026-10-21
 
 ### Added

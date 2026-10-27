@@ -1,86 +1,123 @@
 # pitchforge
 
-Fundamental-frequency (f0) estimation for monophonic audio, in pure Rust.
+Find the pitch of one note at a time, in Rust.
 
-`pitchforge` takes a buffer of audio samples and a sample rate and returns the
-estimated fundamental frequency, a confidence measure, an explicit voicing
-decision and diagnostics. It is a general-purpose DSP library: it has **no**
-knowledge of instruments, note names or tuning systems, and it does not touch
-audio hardware.
+Give `pitchforge` a short slice of audio samples. It estimates the note's
+fundamental frequency in hertz (Hz), says whether a reliable pitch was found,
+and returns diagnostic information. It works without a microphone or a UI.
 
-> **Status:** 0.x, early development. Minor versions may change the API.
+**Early development:** the API can change between 0.x releases. This is a
+monophonic detector: play one note at a time.
 
-## Features
+## Where it fits
 
-- **YIN** (de Cheveigné & Kawahara, 2002), our own implementation, with an
-  O(N log N) FFT difference function (default) and a direct reference path.
-- **McLeod Pitch Method** — planned for 0.2.
-- Allocation-free detection after construction.
-- Honest voicing: silence, aperiodic and out-of-range windows are reported as
-  unvoiced with a reason, never guessed.
-- `Framer` for streaming windows and `OnsetDetector` for note attacks.
-- Deterministic synthetic signals (`signals` feature) for testing.
+| Repository | What it does |
+| --- | --- |
+| **pitchforge-rs** | Measures frequency from audio. This repository. |
+| [naghma-core](https://github.com/MansourAZ0/naghma-core) | Turns frequency into Arabic/Latin solfège, quarter-tones and musical events. |
+| [watar-tuner](https://github.com/MansourAZ0/watar-tuner) | A standalone oud tuner. |
+| [Ajnas](https://github.com/MansourAZ0/Ajnas) | An oud practice app with teaching, maqam suggestions and optional camera tracking. |
 
-## Usage
+Pitch detection itself does not need a Western or Eastern tuning system.
+`pitchforge` keeps the frequency continuous; `naghma-core` adds the Arabic music
+interpretation. See [credits and project additions](CREDITS.md).
+
+## Try it
+
+Install Rust, clone this repository, then run a generated example:
+
+```sh
+git clone https://github.com/MansourAZ0/pitchforge-rs.git
+cd pitchforge-rs
+cargo run --example basic --features signals
+```
+
+To analyse your own WAV recording:
+
+```sh
+cargo run --release --example analyze_wav -- recording.wav 4096 512
+```
+
+The last two numbers are the analysis window and hop, in samples. A window is
+the short piece of audio being measured; a hop is how far it advances each time.
+
+## Use it in Rust
+
+The existing Git release is `v0.1.0`; it does not include later unreleased fixes.
 
 ```toml
 [dependencies]
 pitchforge = { git = "https://github.com/MansourAZ0/pitchforge-rs", tag = "v0.1.0" }
 ```
 
+This complete example generates a 220 Hz tone and measures it:
+
 ```rust
 use pitchforge::{PitchDetector, Yin, YinConfig};
 
-let mut yin = Yin::new(48_000.0, 4096, YinConfig::default())?;
-let estimate = yin.detect(&window)?;          // window: &[f32], 4096 samples
-match estimate.frequency() {
-    Some(f0) => println!("{f0:.2} Hz, confidence {:.2}", estimate.confidence),
-    None => println!("no pitch: {:?}", estimate.voicing),
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let sample_rate = 48_000.0;
+    let window: Vec<f32> = (0..4096)
+        .map(|n| (std::f64::consts::TAU * 220.0 * n as f64 / sample_rate).sin() as f32)
+        .collect();
+    let mut detector = Yin::new(sample_rate, window.len(), YinConfig::default())?;
+    let estimate = detector.detect(&window)?;
+    match estimate.frequency() {
+        Some(hz) => println!("{hz:.2} Hz"),
+        None => println!("No reliable pitch: {:?}", estimate.voicing),
+    }
+    Ok(())
 }
 ```
 
-See [`examples/`](examples) — `analyze_wav` tracks the pitch of a WAV file:
+## What is implemented
+
+- YIN pitch estimation, with an FFT path and a direct reference path.
+- Frequency range, silence gate, confidence and explicit unvoiced reasons.
+- Working buffers allocated once when the detector is created.
+- `Framer` for overlapping windows and `OnsetDetector` for note attacks.
+- Deterministic test signals behind the `signals` feature.
+
+McLeod Pitch Method is planned; it is **not implemented**.
+
+## Settings and limits
+
+Defaults search 50–1400 Hz. At 48 kHz, a 4096-sample window covers about 85 ms;
+a 512-sample hop produces a reading about every 11 ms. Frequent readings do not
+remove the delay caused by observing a whole window.
+
+Use `Yin::required_window_size` when changing the lowest frequency. The window
+must hold at least two periods plus interpolation space. Silence, unsuitable
+input and some out-of-range candidates produce no voiced frequency. A tone
+outside the search range can still be mistaken for a harmonic inside it.
+
+Confidence measures periodicity, not the probability that a note is correct.
+Overlapping notes and abrupt changes can confuse the detector. Tests cover
+quarter-tone sweeps, noise, vibrato and synthetic oud-like plucks; these do not
+establish accuracy on every real instrument. Historical measurements and their
+conditions are in [benchmarks](docs/benchmarks.md).
+
+## Contribute
 
 ```sh
-cargo run --release --example analyze_wav -- recording.wav 4096 512
-```
-
-## Choosing parameters
-
-| Parameter | Default | Notes |
-|-----------|---------|-------|
-| `min_frequency` / `max_frequency` | 50 / 1400 Hz | The window must hold ≥ 2 periods of `min_frequency` (`Yin::required_window_size`). |
-| window | — | 4096 at 48 kHz is a good default for low notes (≈ 85 ms); 2048 halves latency but needs `min_frequency` ≥ ~47 Hz. |
-| `threshold` | 0.15 | First CMNDF dip below this is taken. Lower = stricter. |
-| `voicing_threshold` | 0.25 | Dips between the two thresholds are voiced with `threshold_met = false`. |
-| `silence_threshold_db` | −60 dBFS | RMS gate. |
-
-## Accuracy and performance
-
-Measured numbers and conditions are in [docs/benchmarks.md](docs/benchmarks.md).
-Summary (synthetic signals, 48 kHz, window 4096): < 0.1 cent error on clean
-periodic signals 50–1400 Hz, zero octave errors across the test matrix,
-≈ 38 µs per window on an Apple M2.
-
-### Known limitations
-
-- Windows that straddle an abrupt note change report a frequency between the
-  two notes, often with high confidence. Use onset detection and temporal
-  stability checks downstream.
-- Synthetic accuracy does not imply accuracy on real recordings.
-- Monophonic only.
-
-## Development
-
-```sh
-cargo test --all-features
-cargo test --release --features signals --test yin_accuracy -- --nocapture
+cargo test --all-features --locked
+cargo test --no-default-features --locked
+cargo fmt --all --check
+cargo clippy --all-targets --all-features --locked -- -D warnings
 cargo bench --bench detectors --features signals
 ```
 
-MSRV: Rust 1.85.
+The library declares Rust 1.85 as its minimum; use current stable Rust for the
+full development toolchain. See [contributing](CONTRIBUTING.md),
+[security](SECURITY.md), and the [release guide](docs/OPEN_SOURCE.md).
 
-## License
+## Credits and license
 
-Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or
-[MIT license](LICENSE-MIT) at your option.
+YIN was developed by **Alain de Cheveigné and Hideki Kawahara**.
+[Alessandro Genova's pitch-detection](https://github.com/alesgenova/pitch-detection)
+is acknowledged as related prior work in Rust pitch detection. The available
+history does not establish a fork of that library. [CREDITS.md](CREDITS.md)
+explains the distinction and the additions across this ecosystem.
+
+Project code is available under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE),
+at your option. Dependency licenses still apply; see [third-party notices](THIRD_PARTY_NOTICES.md).
