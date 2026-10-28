@@ -7,6 +7,8 @@ break the API).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-28
+
 ### Fixed
 - Reject unrepresentable YIN lag/window calculations for extremely small minimum frequencies.
 - Describe only the implemented YIN detector in package metadata.
