@@ -108,8 +108,8 @@ cargo bench --bench detectors --features signals
 ```
 
 The library declares Rust 1.85 as its minimum; use current stable Rust for the
-full development toolchain. See [contributing](CONTRIBUTING.md),
-[security](SECURITY.md), and the [release guide](docs/OPEN_SOURCE.md).
+full development toolchain. See [contributing](CONTRIBUTING.md)
+and [security](SECURITY.md).
 
 ## Credits and license
 

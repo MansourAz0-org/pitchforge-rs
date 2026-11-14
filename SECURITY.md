@@ -28,4 +28,4 @@ they do not remove a file already committed. A leaked credential must be revoked
 and replaced, including if it only exists in old Git history.
 
 History scans and dependency checks help find known patterns; they do not prove
-the absence of vulnerabilities. See [release preparation](docs/OPEN_SOURCE.md).
+the absence of vulnerabilities.
