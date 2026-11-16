@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   gitleaks:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v7
         with:
@@ -31,7 +31,7 @@ jobs:
           ./gitleaks git "$GITHUB_WORKSPACE" --redact=100 --log-opts=--all
 
   rust-dependencies:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
