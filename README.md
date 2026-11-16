@@ -14,9 +14,9 @@ monophonic detector: play one note at a time.
 | Repository | What it does |
 | --- | --- |
 | **pitchforge-rs** | Measures frequency from audio. This repository. |
-| [naghma-core](https://github.com/MansourAZ0/naghma-core) | Turns frequency into Arabic/Latin solfège, quarter-tones and musical events. |
-| [watar-tuner](https://github.com/MansourAZ0/watar-tuner) | A standalone oud tuner. |
-| [Ajnas](https://github.com/MansourAZ0/Ajnas) | An oud practice app with teaching, maqam suggestions and optional camera tracking. |
+| [naghma-core](https://github.com/MansourAz0-org/naghma-core) | Turns frequency into Arabic/Latin solfège, quarter-tones and musical events. |
+| [watar-tuner](https://github.com/MansourAz0-org/watar-tuner) | A standalone oud tuner. |
+| [Ajnas](https://github.com/MansourAz0-org/Ajnas) | An oud practice app with teaching, maqam suggestions and optional camera tracking. |
 
 Pitch detection itself does not need a Western or Eastern tuning system.
 `pitchforge` keeps the frequency continuous; `naghma-core` adds the Arabic music
@@ -27,7 +27,7 @@ interpretation. See [credits and project additions](CREDITS.md).
 Install Rust, clone this repository, then run a generated example:
 
 ```sh
-git clone https://github.com/MansourAZ0/pitchforge-rs.git
+git clone https://github.com/MansourAz0-org/pitchforge-rs.git
 cd pitchforge-rs
 cargo run --example basic --features signals
 ```
@@ -47,7 +47,7 @@ The existing Git release is `v0.1.0`; it does not include later unreleased fixes
 
 ```toml
 [dependencies]
-pitchforge = { git = "https://github.com/MansourAZ0/pitchforge-rs", tag = "v0.1.0" }
+pitchforge = { git = "https://github.com/MansourAz0-org/pitchforge-rs", tag = "v0.1.0" }
 ```
 
 This complete example generates a 220 Hz tone and measures it:

@@ -42,7 +42,7 @@ verified list of patches applied to Genova's code.
 ## Musical and software sources
 
 Maqam illustrations are documented in
-[naghma-core's research record](https://github.com/MansourAZ0/naghma-core/blob/main/docs/MAQAMAT_RESEARCH.md),
+[naghma-core's research record](https://github.com/MansourAz0-org/naghma-core/blob/main/docs/MAQAMAT_RESEARCH.md),
 including MaqamWorld and Sami Asmar's transposition reference. Preserve the
 source URLs and provisional status when redistributing the JSON. Source score
 images, page prose and third-party recordings are not bundled here.
